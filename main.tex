@@ -1,0 +1,252 @@
+\documentclass[10pt, oneside]{article}
+\usepackage[letterpaper, margin=1in]{geometry}
+%\usepackage[parfill]{parskip}    		% Activate to begin paragraphs with an empty line rather than an indent
+\usepackage{graphicx}
+\usepackage{amssymb}
+\usepackage[style=numeric,firstinits=true,backend=bibtex]{biblatex}
+\addbibresource{main}     %Adds the bib file (bib-database)
+\usepackage{wrapfig}
+\usepackage{algorithm}
+\usepackage{algpseudocode}      % for writing pseudocode
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{url}
+% \usepackage{tikz}              % for drawing superb diagrams, use omni-graffle or yEd
+% \usetikzlibrary{calc,shapes.multipart,chains,arrows}
+\usepackage{graphicx}
+\usepackage{nameref}            % Cross-referencing to include the name of the section, 
+                                % rather than just the number or page
+
+% \usepackage{adjustbox}          %Adjustments like in "includegraphics" options
+\usepackage{framed}             % Create framed, shaded, or differently highlighted 
+                                % regions that can break across pages
+\usepackage[all]{xy}
+\usepackage{txfonts,pxfonts}    %additional fonts: for more symbols
+\usepackage{bm}
+\usepackage{enumerate}          %gives the enumerate environment an optional argument
+                                % which determines the style in which the counter is 
+                                % printed
+\usepackage{subfigure}          %for sub figures
+\usepackage[linktoc=all]{hyperref}
+\usepackage{enumitem}
+\usepackage{multirow}
+\setlength{\parskip}{.25ex plus1mm minus1mm}
+% ----------------------------------------
+%  Nice code using inconsolata font
+% ----------------------------------------
+
+%\usepackage{listings}
+\usepackage{xcolor}
+
+% Code listing stuff
+\usepackage{listings}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[scaled=0.8]{beramono}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\definecolor{light-gray}{gray}{0.45}
+\definecolor{dark-green}{rgb}{0.0,0.34,0.25}
+
+\lstset { language=Python }
+
+\lstset { 
+	% Basic formatting
+	basicstyle=\ttfamily\footnotesize,
+	keywordstyle=\color{blue}\ttfamily\bfseries,
+	commentstyle=\color{light-gray}\ttfamily\itshape,
+	breaklines=true,
+	escapechar=\%,
+	showspaces=false,
+	captionpos=b,
+	%abovecaptionskip=\medskipamount,
+	%belowskip=-2em,
+	% Line numbering
+	numbers=left,
+	xleftmargin=3.6em,
+	framexleftmargin=1.5em,
+	numberstyle=\color{light-gray},
+	firstnumber=1,
+	numberfirstline=true
+}
+
+
+%\usepackage{fontspec}
+%\setmonofont{Consolas}
+
+%\lstdefinelanguage{ds2}{
+%  morekeywords={
+%    world, machine, agents, compute, %
+%    agents-bandwidth, agents-reactions , %
+%    level, parent, sync, async, send, broadcast,%
+%    reactions, sender,
+%    schedule, function,%
+%    on-join, on-rejoin, on-leave, on-start, on-demise, on-link-failed,%
+%    abstract,case,catch,class,def,%
+%    do,else,extends,false,final,finally,%
+%    for,if,implicit,import,match,mixin,%
+%    new,null,object,override,package,%
+%    private,protected,requires,return,sealed,%
+%    super,this,throw,trait,true,try,%
+%    type,val,var,while,with,yield},
+%  otherkeywords={!,:,=>,<-,<\%,<:,>:,\#,@},
+%  sensitive=true,
+%  morecomment=[l]{//},
+%  morecomment=[n]{/*}{*/},
+%  morestring=[b]",
+%  morestring=[b]',
+%  morestring=[b]"""
+%}
+%
+%\lstset{ %
+%  postbreak=\raisebox{0ex}[0ex][0ex]{\ensuremath{\color{red}\hookrightarrow\space}}, % shows hook arrow and indents wrapped line 
+%  backgroundcolor=\color{white},   % choose the background color; you must add \usepackage{color} or \usepackage{xcolor}
+%  basicstyle=\tiny,        % the size of the fonts that are used for the code
+%  breakatwhitespace=false,         % sets if automatic breaks should only happen at whitespace
+%  breaklines=true,                 % sets automatic line breaking
+%  captionpos=b,                    % sets the caption-position to bottom
+%  commentstyle=\color{olive},    % comment style
+%  deletekeywords={...},            % if you want to delete keywords from the given language
+%  escapeinside={\%*}{*)},          % if you want to add LaTeX within your code
+%  extendedchars=true,              % lets you use non-ASCII characters; for 8-bits encodings only, does not work with UTF-8
+%  frame=single,	                   % adds a frame around the code
+%  keepspaces=true,                 % keeps spaces in text, useful for keeping indentation of code (possibly needs columns=flexible)
+%  keywordstyle=\color{blue},       % keyword style
+%  language=ds2,                 % the language of the code
+%  otherkeywords={*,...},           % if you want to add more keywords to the set
+%  numbers=left,                    % where to put the line-numbers; possible values are (none, left, right)
+%  numbersep=5pt,                   % how far the line-numbers are from the code
+%  numberstyle=\tiny\color{gray}, % the style that is used for the line-numbers
+%  rulecolor=\color{gray},         % if not set, the frame-color may be changed on line-breaks within not-black text (e.g. comments (green here))
+%  showspaces=false,                % show spaces everywhere adding particular underscores; it overrides 'showstringspaces'
+%  showstringspaces=false,          % underline spaces within strings only
+%  showtabs=false,                  % show tabs within strings adding particular underscores
+%  stepnumber=2,                    % the step between two line-numbers. If it's 1, each line will be numbered
+%  stringstyle=\color{red},     % string literal style
+%  tabsize=2,	                   % sets default tabsize to 2 spaces
+%  title=\lstname,                   % show the filename of files included with \lstinputlisting; also try caption instead of title
+%}
+
+% ----------------------------------------
+
+% \raggedbottom % less spacing between items 
+
+% Recommended, but optional, packages for figures and better typesetting:
+\usepackage{microtype}
+\usepackage{graphicx}
+\usepackage{subfigure}
+\usepackage{booktabs} % for professional tables
+\usepackage{tabularx}
+\usepackage{upgreek}
+\usepackage{comment}
+\usepackage{amsmath,array,graphicx}
+
+\usepackage{tabularx}
+\usepackage{multirow}
+\usepackage{graphicx}
+\usepackage{algorithm}
+%\usepackage[noend]{algpseudocode}
+\usepackage[colorinlistoftodos]{todonotes}
+%\usepackage{algorithm,algpseudocode}
+\usepackage{upgreek}
+
+% hyperref makes hyperlinks in the resulting PDF.
+% If your build breaks (sometimes temporarily if a hyperlink spans a page)
+% please comment out the following usepackhttps://www.overleaf.com/project/5cedce0cdfbeaa5a7375b030age line and replace
+% \usepackage{sysml2019} with \usepackage[nohyperref]{sysml2019} above.
+%\usepackage{hyperref}
+
+% Attempt to make hyperref and algorithmic work together better:
+\newcommand{\theHalgorithm}{\arabic{algorithm}}
+
+% Code listing stuff
+\usepackage{listings}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[scaled=0.8]{beramono}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{xcolor}
+\usepackage{xspace}
+\definecolor{light-gray}{gray}{0.45}
+\definecolor{dark-green}{rgb}{0.0,0.34,0.25}
+
+\title{\huge \textbf{Systems and Methods for Resource Efficient \\ and Reliable Neural Network Compression}}
+%
+\author{\\
+        \\\huge \textbf{Dissertation Proposal} \\
+        \\
+        \\
+        \\\huge \textbf{Candidate} \\
+        \\
+        \\\huge Vinu Joseph \\
+        \\ \LARGE \texttt{vinu@cs.utah.edu}
+        \\
+        \\
+        \\
+        \\
+        \\\huge \textbf{Dissertation Committee}\\
+        \\
+        \\\huge Ganesh Gopalakrishnan \\
+        \\\huge Aditya Bhaskara \\
+        \\\huge Vivek Srikumar \\
+        \\\huge Mary Hall \\
+        \\\huge Michael Garland \\
+        
+        }
+\date{}
+%
+%\date{\LARGE October 09, 2018 -- October 16, 2018}
+%        
+%
+%\title{\textbf{PhD Written Qualifier Exam}
+%\vspace{5ex}
+%\\
+%\underline{Examiners}
+%\\ 
+%Ganesh Gopalakrishnan
+%\\
+%Mary Hall
+%\\
+%Aditya Bhaskara
+%\\
+%Vivek Srikumar}
+%%
+%\author{\underline{Examinee}\\ Vinu Joseph\\{\texttt{vinu@cs.utah.edu}}}
+%
+%
+\renewcommand*{\bibfont}{\footnotesize}
+\lstset{basicstyle=\ttfamily,
+escapeinside={||},
+mathescape=true}
+%
+\newenvironment{blockquote}{\par\medskip\leftskip=4em\rightskip=2em\noindent\ignorespaces}{\par\medskip}
+%
+%\DeclareMathOperator*{\argmax}{arg\,max}
+%\DeclareMathOperator*{\argmin}{arg\,min}
+\newcommand{\norm}[1]{\left\lVert#1\right\rVert}
+\newcommand{\algoName}[0]{\textsc{Condensa}\xspace}
+%
+\begin{document}
+\maketitle
+\newpage
+\setcounter{tocdepth}{3}
+\tableofcontents
+\newpage
+
+\include{inputs/intro}
+\include{inputs/thesis}
+\include{inputs/research}
+\include{inputs/timeline}
+\include{inputs/vision}
+
+\printbibliography
+
+\end{document}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "root"
+%%% End:

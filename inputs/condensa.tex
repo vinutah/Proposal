@@ -1,0 +1,46 @@
+\subsection{Condensa: A Programmable Approach to Neural Network Compression}
+\subsubsection{Background, Related Work}
+
+For a given task such as image classification, assume we have trained a large {\em reference} model $\overline{\bw} = \argmin_{\bw} L(\bw)$, where $L()$ denotes a {\em loss function} (e.g., cross-entropy on a given training set), and $\bw \in \mathbb{R}^P$. {\em Model compression} refers to finding a smaller model $\Theta$ that can be applied to the same task and ideally achieves the same accuracy as $\overline{\bw}$.
+Model compression can be performed in various ways, and \algoName currently supports two commonly used techniques: pruning and quantization. In pruning, non-zero values from $\overline{\bw}$ are eliminated or ``pruned'' to obtain $\Theta$. Pruning is usually performed using some kind of thresholding (for eg., magnitude-based) and can be unstructured (prune any non-zero value) or structured (prune only {\em blocks} of non-zeros). On the other hand, quantization retains the number of parameters in $\Theta$ but assigns parameters in $\overline{\bw}$ one of K codebook values, where the codebook may be fixed or adaptive. \algoName supports low-precision approximation, which refers to assigning each parameter in $\overline{\bw}$ a corresponding lower-precision representation (for example, converting from 32-bit to 16-bit floating-point) and is equivalent to quantization using a fixed codebook.
+
+
+\noindent \textbf{DNN Compression Techniques}
+There is considerable prior work on accelerating neural networks using structured 
+weight pruning~\cite{wang2019structured,mccarley2020structured,frankle2018lottery, han2015learning, luo2017thinet, han2017ese, dong2017more, han2016eie, polyak2015channel, hu2016network, anwar2016compact, molchanov2016pruning}, quantization~\cite{zhu2016trained, gong2014compressing} and 
+low-rank tensor factorization~\cite{kossaifi2020factorized,lebedev2014speeding, xue2013restructuring, denton2014exploiting, girshick2015fast}.
+Most of these individual compression
+schemes for pruning and quantization and their combinations can be expressed in \algoName. Two common problems with these existing methods are: (1) determining optimal sparsity at a global (network) level, and (2) distributing global sparsity into per-layer sparsities.
+We tackle these problems efficiently and systematically using our Bayesian and L-C optimizers, respectively, as described in Section~\ref{sec:condensa}.
+
+\noindent \textbf{Automated Model Compression}
+\begin{comment}
+Bayesian optimization has previously been demonstrated to work well for general hyperparameter optimization in machine learning and neural architecture search~\cite{snoek2012practical,dai2019chamnet}.
+To the best of our knowledge, we are the first to use sample-efficient search via Bayesian optimization for obtaining compression hyperparameters.
+Automation in model compression is currently achieved either through reinforcement learning (RL) algorithms~\cite{he2018amc} or simulated annealing~\cite{liu2019autoslim}. 
+In particular, the automation procedure for AMC~\cite{he2018amc} uses four arbitrary stages of pruning and re-training for RL training; additionally, the reward function is difficult to design, and even given a good reward, local optima can be hard to escape. It is also difficult to determine when such methods may just be overfitting to irrelevant patterns in the environment. Even disregarding generalization issues, AMC's agent (DDPG) uses trial and error, which is characterized to have an underlying incompatibility with the target pruning problem \cite{liu2019autoslim}.
+AutoSlim~\cite{liu2019autoslim} proposes an automated approach based on simulated annealing, and uses the ADMM algorithm for accuracy recovery, which is an AL-based method very similar to the L-C algorithm; AutoSlim, however, only supports weight pruning and does not support general compression schemes as \algoName does. 
+\end{comment}
+Automating model compression involves finding both an optimal compression strategy for a given $\overline{\bw}$, along with its corresponding compression hyperparameters such as target sparsity with minimal manual intervention. Current state-of-the-art frameworks in this domain include AMC~\cite{he2018amc} and AutoCompress~\cite{liu2019autoslim}, which use reinforcement learning and simulated annealing, respectively, to automatically find desirable target sparsities for a fixed pruning strategy. \algoName, in contrast, supports the programmable expression of a wide variety of compression strategies (not just pruning). Also, in the context of automated model compression, each sample corresponds to training the compressed model to convergence, and can be extremely expensive to compute; unfortunately, techniques such as reinforcement learning, which is used in AMC~\cite{he2018amc}, can be highly sample-inefficient~\cite{mnih2013playing}. To minimize the number of samples drawn, \algoName uses a novel and sample-efficient Bayesian optimization-based algorithm for automatically arriving at desirable target sparsities. While Bayesian optimization has previously been demonstrated to work well for general hyperparameter optimization in machine learning and neural architecture search~\cite{snoek2012practical,dai2019chamnet}.
+To the best of our knowledge, we are the first to use sample-efficient search via Bayesian optimization for obtaining compression hyperparameters.
+%
+
+\noindent \textbf{General Compression Algorithms and Tools} General accuracy recovery algorithms capable of handling a wide variety of compression techniques provide the foundation for systems like \algoName. Apart from the L-C algorithm~\cite{carreira2017model} which \algoName uses, other recent accuracy recovery algorithms have been proposed. ADAM-ADMM~\cite{zhang2018adam} proposes a unified framework for structured weight pruning based on ADMM that performs dynamic regularization in which the regularization target is updated in each iteration. DCP~\cite{zhuang2018discrimination} introduces additional losses into the network to increase the discriminative power of intermediate layers and select the most discriminative channels for each layer by considering the additional loss and the reconstruction error. \algoName can readily support such algorithms as additional optimizers as described in Section~\ref{sec:condensa}. Neural network distiller~\cite{neta_zmora_2018_1297430}, TensorFlow model optimization toolkit~\cite{tftoolkit} {\color{black} and NNCF~\cite{kozlov2020neural} are three recent open-source model compression frameworks that support multiple compression schemes.} While these projects share a number of common goals with \algoName, they differ in two important ways: first, they do not support the expression of schemes as imperative programs containing control-flow, iteration, recursion, etc.~(Distiller requires a declarative compression specification in YAML, while the TensorFlow model optimization toolkit operates by modifying the DNN computation graph directly); second, these frameworks do not support automatic compression hyperparameter optimization for black-box objective functions.
+
+\subsubsection{Contribution}
+
+This paper makes the following contributions:
+\begin{enumerate}
+    \item It presents \algoName, a new framework for programmable neural network compression. \algoName supports the expression of
+the overall compression strategy in Python using operators provided by its compression library. 
+%
+Since each strategy is a Python function, users are  
+able to programmatically compose elementary schemes to build much
+more complex and practically interesting schemes.
+
+\item It presents a novel sample-efficient algorithm based on Bayesian optimization (B.O.) in \algoName for automatically inferring optimal sparsities based on a user-provided objective function. Given \algoName's ability to support the expression of meaningful high-level
+objective functions---for example, the throughput (images/sec) of a convolutional neural network---users
+are freed from the burden of having to specify compression hyperparameters manually.
+
+\item It demonstrates the effectiveness of \algoName on three image classification and language modeling tasks, resulting in memory footprint reductions of up to $188\times$ and runtime throughput improvements of up to $2.59\times$ using at most 10 samples per search.
+\end{enumerate}

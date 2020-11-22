@@ -1,0 +1,199 @@
+\subsection{Correctness: Reliable Model Compression via Label-Preservation-Aware Loss Functions}
+\subsubsection{Background, Related Work}
+
+In this section, we provide a brief overview of recent model compression approaches, followed by a more detailed background on group sparsity-based model compression and CIE reduction.
+
+% -- Upweighted CIEs (better way would be to only upweight CIEs which are not misclassified by the uncompressed model, but misclassified by the compressed model)
+%
+%\noindent \textbf{Model Compression}
+%Definition
+%LC-optimizers
+%Rewind
+%Magnitude-based
+%Shortcomings of focusing on accuracy alone
+\noindent \textbf{Model Compression}
+Deep neural networks are heavy on computation and memory by design,
+%
+creating an impediment to operating these networks on resource-constrained platforms.
+%
+%
+To alleviate this constraint, several branches of work 
+have been proposed to reduce the size of an existing
+neural network.
+%
+%
+The most commonly employed approach 
+is to reduce the number of weights, neurons, or layers in a 
+network while maintaining approximately the same
+performance~\cite{joseph2020programmable}.
+%
+This approach was first explored on DNNs
+in early work such as~\cite{lecun1990optimal,hassibi1994optimal}.
+%
+%
+Studies conducted by~\cite{han2015learning,han2015deep} %song han
+showed that simple unstructured pruning can reduce the size
+of the network by pruning unimportant connections within the 
+network. However, such unstructured pruning strategies produce large sparse weight matrices that are computationally inefficient unless equipped with a specialized hardware~\cite{numenta20}.
+%
+%
+To resolve this issue, structured pruning methods were proposed 
+where entire channels are pruned simultaneously to ensure that the pruned network can be naturally accelerated on commodity hardware~\cite{li2016pruning,hu2016network,wen2016learning}. %the denseness of the weights.
+%
+More recently, Renda et al.~\cite{renda2020rewind} proposed the \textit{rewind} algorithm which is similar to simple fine-tuning of the network to regain the loss in accuracy incurred during the pruning step. The sparsity level of the model is updated in small steps where each step enhances the sparsity of the model followed by fine-tuning.
+The two major schemes for structured pruning are either based on filter pruning~\cite{joseph2019condensa} or low-rank tensor factorization~\cite{li2020group}. Both these approaches enable direct acceleration of the networks in contrast to unstructured pruning.
+Li et al.~\cite{li2020group} explored the relationship between tensor factorization and general pruning methods, and proposed a unified approach based on sparsity-inducing norm which can be interpreted as both tensor factorization or direct filter pruning. By simply changing the way the sparsity regularization is enforced, filter pruning and low-rank decomposition can be derived accordingly. 
+This is particularly important for the compression of popular network architectures with shortcut connections (e.g. ResNet), where filter pruning cannot deal with the last convolutional layer in a ResBlock while the low-rank decomposition methods can.
+
+\paragraph{Accuracy Recovery Algorithms} General accuracy recovery algorithms capable of handling a wide variety of compression techniques provide the foundation for modern compression systems. Prior work in this domain includes the LC algorithm~\cite{carreira2017model}, ADAM-ADMM~\cite{zhang2018adam} and DCP~\cite{zhuang2018discrimination}. More recently,
+%like \algoName. Apart from the L-C algorithm~\cite{carreira2017model} which \algoName uses, other accuracy recovery algorithms are also suitable for our \emph{label-preservation loss function} formulation, for example ADAM-ADMM~\cite{zhang2018adam} a unified framework for structured weight pruning based on ADMM that performs dynamic regularization in which the regularization target is updated in each iteration.
+%and also DCP~\cite{zhuang2018discrimination} which has additional losses into the network to increase the discriminative power of intermediate layers and select the most discriminative channels for each layer by considering the additional loss and the reconstruction error. 
+the \textit{Rewind}~\cite{renda2020rewind} and Group-Sparsity~\cite{li2020group} algorithms have been demonstrated to be state-of-the-art compression algorithms.
+Due to their compression scheme-agnostic nature, we build upon these two methods in our paper to evaluate the proposed \emph{label-preservation-aware loss functions} as described in Section~\ref{sec:losses}.
+%Both these formulations are independent of both the compression scheme ($\mathcal{H}$) and the compression accuracy recovery algorithm ($\mathcal{A}$) itself given that the method allows optimizing over arbitrary differentiable loss functions.
+%
+
+\paragraph{Network Distillation}
+%Teacher-student learning?
+%Logit Pairing
+%Kannan et al. (2018)~\cite{kannan2018adversariallogit} used the idea of logit pairing between different images to .
+%Knowledge distillation (Hinton)
+Another branch of network compression initially proposed by \cite{hinton2015distilling}, attempts to distill knowledge from a large teacher network to a small student network. 
+%attempts to reduce the size of the network by transferring the knowledge of the full network to a student network of smaller size.
+%
+% By employing a loss function that teaches the student network to mimic the outputs of the teacher network, a smaller network with similar performance can be obtained.
+With the assumption that the knowledge captured by a network is reflected in the output probability distribution, this line of work trains the student network to mimic the probability distribution produced by the teacher network. Since the networks are trained to output one-hot distribution, a temperature $T$ is used to diffuse the probability mass.
+%
+Advanced methods of distillation have succeeded in achieving much more effective transfer by not only
+transferring the output logits but the information of the intermediate activations as in~\cite{zagoruyko2016paying, romero2014fitnets, jang2019learning, ahn2019variational}.
+Although network distillation was presented as a general form of logit pairing, it is quite difficult to obtain improvements during distillation without spending considerable effort in manually tuning the temperature $T$ for the softmax layer. In contrast, using pure logit pairing comes without any additional cost of manual hyperparameter tuning.
+Therefore, we employ pure logit pairing instead of knowledge distillation in our approach.
+
+
+%
+% loss function learning
+% ref https://arxiv.org/pdf/1912.12355.pdf
+% SoftAdapt: Techniques for Adaptive Loss Weighting of 
+% Neural Networks with Multi-Part Loss Functions
+%
+
+\paragraph{Group-Sparsity based Model Compression}
+%\label{sec:group_sparsity}
+
+We now briefly describe the key insight of the compression recovery algorithm that was used in our evaluation.
+The main idea in the Group-Sparsity recovery algorithm \cite{li2020group} is that the filter pruning and filter decomposition seek a compact
+approximation of the parameter tensors despite their different operational forms to cope with different application scenarios.
+%
+Consider a vectorized image patch  $\bf{x} \in \mathbb{R}^{m \times 1}$
+and a group of $n$ filters $\bf{\mathcal{W}} = \{\bf{w_1}, \cdots , \bf{w_n}\} \in \mathbb{R}^{m \times n}$.
+%
+The pruning methods remove output channels and approximate the original output $\bf{x}^T \bf{\mathcal{W}}$ as $\bf{x}^T \bf{C}$, where $\bf{C} \in \mathbb{R}^{m \times k}$ only has
+$k$ output channels. Filter decomposition methods approximate $\bf{\mathcal{W}}$ as two filters $\bf{A} \in \mathbb{R}^{m\times k}$
+and $\bf{B} \in \mathbb{R}^{k \times n}$, making $\bf{AB}$
+a rank $k$ approximation of $\bf{\mathcal{W}}$. 
+%
+Thus, both pruning and decomposition-based methods seek a compact approximation to the original network parameters, but adopt different strategies for the approximation.
+%
+%
+The weight parameters $\bf{\mathcal{W}}$ are usually trained with some regularization 
+such as weight decay to constrain the hypothesis class.
+%
+To get structured pruning of the filter, structured sparsity regularization 
+is used to constrain the filter:
+\begin{equation}
+\min _{\mathcal{W}} \mathcal{L}(y, \Phi(\mathbf{x} ; \mathcal{W}))+\mu \mathcal{D}(\mathcal{W})+\lambda \mathcal{R}(\mathcal{W})
+\label{eq:loss1}
+\end{equation}
+%
+where $\mathcal{D}(\cdot)$ and $\mathcal{R}(\cdot)$ represents the weight decay and 
+sparsity regularization term respectively, while $\mu$ and $\lambda$ are the regularization factors.
+%
+Instead of directly regularizing the matrix $\bf{\mathcal{W}}$ \cite{yoon2017combined, li2019oicsr}, we enforced group sparsity constraints by incorporating a sparsity-inducing matrix $\mathbf{A} \in \mathbb{R}^{n \times n}$, which can be converted to the filter of a $1 \times 1$ convolution layer after the original layer.
+%
+%
+Then the original convolution of 
+$Z = X \times \mathcal{W}$ becomes 
+$Z = X \times (\mathcal{W} \times \mathbf{A})$.
+%
+To obtain a structured sparse matrix, group sparsity regularization is enforced on $\bf{A}$. Thus, the loss Eqn. \ref{eq:loss1} function becomes
+%
+\begin{equation}
+\min _{\mathcal{W}, \mathbf{A}} \mathcal{L}(y, \Phi(\mathbf{x} ; \mathcal{W}, \mathbf{A}))+\mu \mathcal{D}(\mathcal{W})+\lambda \mathcal{R}(\mathbf{A})
+\label{eq:loss2}
+\end{equation}
+%
+Solving the problem in Eqn. \ref{eq:loss2} results in structured group
+sparsity in matrix $\textbf{A}$. By considering matrix $\bf{\mathcal{W}}$ and $\bf{A}$ together, the actual effect is that the original convolutional
+filter is compressed.
+
+\paragraph{Compression Impacted Exemplars (CIEs)}
+
+Top-1 accuracy is just one among many possible ways of characterizing the quality of a compressed model. An alternative approach involves counting all the inputs for which the compressed model disagrees with the original, uncompressed model. Each such input is termed a {\em Compression Impacted Exemplar (CIE)}, following the definition by Hooker et al.~\cite{hooker2020characterising} (see also footnote~\ref{footnote:cie-cie}). %\sscmt{But Sara's definition was Compression Identified Exemplar. I think we should mention this explicitly without just saying that we follow the definition of Hooker et al. since this slightly deviates from it.}
+While CIE reduction is critical in domains which require compressed models to match the original model as closely as possible,
+we observe that reducing label mismatches is all the more important {\em when the reference model makes a correct prediction}. We term such CIEs {\em CIE-U}. In Section~\ref{sec:losses}, we explore novel loss formulations that target both CIE and CIE-U reduction during compression.
+
+%we observe that CIEs can be of two kinds, each with very different characteristics:
+
+%\begin{itemize}
+%    \item \textbf{CIE-C:} A CIE which the compressed model gets right (w.r.t. ground truth) but the uncompressed model gets wrong.
+%    \item \textbf{CIE-U:} A CIE which the uncompressed model gets right (w.r.t. ground truth) but the compressed model gets wrong.
+%\end{itemize}
+
+%While reducing both types of CIEs is desirable for cases where the compressed model must match the reference model as closely as possible, note that there may be domains which care more about reducing CIE-Us alone (i.e., if the reference model makes a correct prediction, ensure that the compressed one does too). In Section~\ref{sec:losses}, we explore novel loss formulations to reduce the different types of CIEs subject to such constraints.
+%We notice that reducing the number of CIE-Cs can {\em hamper} the performance of the final model, and that an effective CIE reduction algorithm must focus on reducing CIE-Us instead.
+
+CIE reduction has received relatively little attention from the research community, with recent work by Hooker et al.~\cite{hooker2020characterising} being the only one that we are aware of that tries to identify and reduce CIEs. Their primary approach  involves re-weighting CIEs, where they consider a mitigation strategy of fine-tuning the compressed model for a certain number (chosen to be 3000) of iterations while up-weighting the CIEs relative
+to the rest of the dataset. Their approach is sensitive to hyperparameters such as: (1) choice of number of fine-tuning iterations, (2) a threshold (90th percentile) to upweight all exemplars above that threshold, and (3) an upweighting value of $\lambda > 1$ for CIE which they choose to be $2$. We believe that our approach  is more principled for a number of reasons. First, we pose CIE mitigation as a general \emph{label-preservation} problem and extensively explore several loss functions to mitigate this without introducing any new hyperparameters than were initially used during model compression or changing any of the values of the original compression hyperparameters. Lastly, we are agnostic to the compression scheme and compression algorithm.
+
+%In Section~\ref{sec:losses}, we introduce novel loss functions that are specifically designed to reduce total CIEs and CIE-Us without adversely affecting CIE-Cs. 
+%\noindent Minimizing the disagreement between the two models in the first case will hamper it's performance on the data, which is undesirable. Therefore, minimization only in the second case is desirable. In order to circumvent this problem, we again introduce the cross-entropy loss into the picture, but in conjunction with the logit pairing loss.
+
+
+
+
+\paragraph{Multi-Part Loss Functions} 
+% soft-adapt
+% Recently more work is being done on how loss functions affect learning 
+Networks that perform challenging tasks or multiple 
+tasks often require a combination of losses to work. Considerable effort has been made towards understanding the role of different loss terms~\cite{huang2019addressing,barron2019general,chen2018gradnorm}, and how best to combine them. 
+%
+%
+% Multiple losses are typically combined by taking an 
+% equally-weighted linear combination of
+% each objective function; but the importance of each part
+% could be different and thus components should be assigned...
+% weights as per their contribution to the learning. 
+While most of the prior work combines these losses either using ad-hoc or equal weights, %. However, the actual contribution of each loss is difficult to manually compute. The weights of different loss functions can even vary over the training time where some losses can be useful to initially bootstrap the model while some are useful in gaining an extra performance boost towards the end of the training cycle.
+%
+% On the other hand, the scaling of each component of the 
+% loss function can inhibit the ability of the optimizer 
+% by only looking at loss components with the largest magnitude.
+% ...
+%In recent years, the need for weighting the components
+%of multi-part functions has become more evident, and 
+researchers have recently tried to develop systematic methods to adjust
+the weights on the linear combination of loss components.
+%
+%
+These methods often require defining new loss functions~\cite{barron2019general} or changing the optimization procedure~\cite{chen2018gradnorm}. %, but there is limited research on the formulation of a general method
+%that can be added to existing architectures. 
+%
+%
+%In most cases, the integration with the current models requires sophisticated adjustment or much longer computation time.
+As we describe in Section~\ref{sec:loss_opti}, we compare three different hyperparameter tuning strategies to optimize our multi-part loss function.
+
+\subsubsection{Contribution}
+
+\noindent Our key contributions in this work are as follows:
+\begin{itemize}
+    \item Employing additional loss terms in the compression objective based on the teacher-student paradigm so as to align the predictions of the reference and the compressed models. %logit pairing term into the network compression objective, thus exploiting the teacher-student learning paradigm along with a term for aligning the predictions of the reference and compressed models. \sscmt{Both of these are the same. Do you mean aligning predictions of the compressed model and the actual targets?} 
+    We show for the first time that such a pairing can be extended to other tasks, by considering semantic segmentation. Figure~\ref{fig:motivation} shows an example of the effect of the different loss terms on the number of model mismatches.
+    \item Analyzing automated strategies for tuning the hyperparameters associated with our multi-part loss functions. We demonstrate that our framework is robust to the choice of tuning strategies, and uniform weighting works as well as more intricate strategies across different datasets and reference network architectures.
+    \item Through extensive experiments, we validate the effectiveness of our framework and show that it not only improves metrics such as the number of CIEs, but also yields better compression accuracy compared to previous approaches. %\sscmt{perhaps we should mention that it's mainly due to the fact that we further decompose CIEs into CIEs-U and CIEs-C, and optimize not to align the logits in cases where the prediction of the reference model is wrong}. 
+\end{itemize}
+
+% What is a good way to design a label-preservation optimization formulation
+% Trying to be Agnostic to Compression Recovery Algorithms.
+
+While the teacher-student paradigm is a coarse way to capture ``semantic similarity'' between the reference and compressed models, our results show that it can nonetheless be highly effective in reducing the number of CIEs.
+We also remark that our methodology can work with any compression scheme that allows us to specify a custom objective that can be optimized to produce a compressed model. 

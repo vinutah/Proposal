@@ -1,0 +1,196 @@
+\subsection{Proposed Work}
+
+\subsubsection{Class-wise CIEs: Mitigating The Bias problem for Fairness in Edge Inference}
+
+\subsubsection{Attribution Matching for Sensitive Edge Inference Tasks}
+
+Mitigating the impact of compression is particularly
+urgent given the widespread use of compressed deep 
+neural networks in resource constrained but sensitive 
+domains such as 
+%
+%
+%
+health care diagnostics 
+\cite{xie2019automated, %(Xie et al., 2019; 
+gruetzemacher20183d,    %Gruetzemacher et al., 2018; 
+badgeley2019deep,       %$Badgeley et al., 2019;
+oakden2020hidden}       %Oakden-Rayner et al., 2019),
+%
+%
+,self-driving cars 
+\cite{teslacrash17} %(NHTSA, 2017)
+%
+facial recognition software
+\cite{
+buolamwini2018gender% Buolamwini
+ % Gebru, 2018b). 
+} and
+%
+hiring
+\cite{amazon18, 
+yourface19}.% Harwell2019
+%
+%
+For these tasks, the trade-offs incurred by 
+compression will be intolerable given the huge impact 
+on human welfare.
+%
+\cmt{Due to the success of Deep learning, there is an 
+emergent trend to utilize deep neural networks (DNNs) 
+even for safety-critical applications such as 
+self-driving cars and health-care applications 
+\cite{estava2017dermatologist,
+samala2018evolutionary, lane2018deep}}.
+%
+Due to the inherent nature of such devices, 
+it is of paramount importance that the utilized 
+DNNs be reliable and trustworthy to human users.
+%
+
+For a system to be reliable, perpetual service 
+must be rendered and the integrity of the system 
+must hold even under unexpected circumstances.
+%
+%
+For most commercially deployed DNNs, this condition 
+is hardly met as they are often operated in the 
+cloud due to their heavy computational requirements.
+%
+%
+However, this dependence on clouds acts as a 
+critical weakness in safety-sensitive settings 
+as intermittent communication failuers to the 
+cloud may cause difficulties in reacting to 
+situations immediately, or even-worse, 
+the device's connection to the cloud may be 
+severed indefinitely.
+%
+%
+Thus, to guarantee reliable service, 
+the DNNs must be embedded on the edge device.
+%
+%
+%
+To this end, network compression techniques such 
+as pruning \cite{han2015deep,li2016pruning} and distillation \cite{hinton2015distilling,zagoruyko2016paying} 
+are commonly employed - as a compressed network 
+would require less computational time and memory 
+but maintain its prediction performance to a 
+certain acceptable margin, effectively substituting 
+the original network for edge computation.
+
+\vcmt{This text is for attribution-perservation, we need to rewrite for label-preservation}
+\cmt{At the same time, for a system to be trustworthy, 
+the system must be transparent enough for humans 
+to understand its workings and the reasons for its outputs.
+%
+%
+An example would be when a health monitor 
+predicts an onset of disease \cite{xu2019current}
+- then the clinician would require an acceptable
+explanation to the device output.
+%
+%
+However, the black-box nature of deep neural 
+networks complicates this goal - impeding its 
+advance in safety-critical areas.
+%
+%
+For DNNs to gain trustworthiness, the ability 
+to explain why the network makes such decisions 
+is essential. Such field of interest - 
+eXplainable AI (XAI) - has emerged as one of the 
+importance frontiers in the field of deep learning.
+%
+%
+Amoung numerous XAI methods, the most commonly 
+used methods are attribution methods \cite{selvaraju2017grad}, 
+which weigh the parts of the input data according to 
+how much they 'contributed' to produce the output prediction.
+%
+%
+Such attribution methods are beginning to be applied
+in safety-critical fields \cite{liang2020prediction}.}
+
+To ensure the safety of the system, 
+the two aforementioned conditions should be simultaneously 
+satisfied - the embedded DNNs must be equipped with 
+both compression and attribution.
+%
+%
+However we show for the first time that these seemingly
+unrelated techniques conflict with each other:
+\vcmt{compressing a network causes deformations in 
+the produced attributions, even if the predictions 
+of the network stays the same before and after compression.}
+%
+%
+\vcmt{This is a potentially severe crack in the 
+integrity of the compressed network, 
+as the premise in which a compressed network 
+is acceptable in safety-critical fields is that 
+the compressed network in as reliable as its former self}.
+%
+%
+\textit{This implies that the compressed nework must behave 
+almost identically to the pre-compression network while being
+smaller in size.}
+%
+%
+Moreover, the classifications between the network are
+not only different from their past counterparts 
+but also broken down compared to their respective ground truths
+%
+%
+\begin{itemize}
+    \item Examples where the compressed model gets the example 
+          right but the uncompressed model gets it wrong.
+    \item Examples where the uncompressed model gets it right 
+          but the compressed model gets it wrong.
+\end{itemize}
+%
+%
+These label distortions directly
+cause incorrect interpretations, which could lead to dire 
+consequences for safety-critical systems.
+%
+%
+Such a problem arises from the pitfall of existing 
+network compression approaches: they only
+aim to maintain the prediction quality of the network while 
+reducing the size of the network.
+%
+%
+Compressing a network forces the network to cram its 
+necessary decision procedures and information inside a
+smaller space.
+%
+This space restriction forces the network to abandon its 
+standard decision procedures and resort to using shortcuts 
+and hints that are seemingly indecipherable to humans.
+%
+Thus, its decision procedures would become harder to 
+interpret, which is reflected in its production of deformed
+attribution maps
+%
+%
+To resolve this newfound unintended
+issue, we propose a novel label-preservation aware 
+compression framework  to ensure both the reliability and 
+trustworthiness of the compressed model.
+%
+...we concentrate on the observation that the labels 
+of the pre-network (teacher) are closer to the ground truth signal 
+compared to the post-network (student).
+%
+Thus, in the absence of ground truth signals, the labels
+of the teacher can serve as a proxy. 
+%
+In this sense, we propose a automatically parameter 
+tuned regularizer learning framework that matches the 
+of the now-compressing network to its attribution maps 
+before compression, transferring the attributional power 
+of the pre-network to the post-network. Our work sheds 
+new light on transfer learning techniques from the perspective of XAI,
+as they can be re-interpreted and subsumed under our framework.
