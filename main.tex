@@ -160,6 +160,21 @@
 % Attempt to make hyperref and algorithmic work together better:
 \newcommand{\theHalgorithm}{\arabic{algorithm}}
 
+\newcommand{\argmin}{\operatornamewithlimits{argmin}}
+\newcommand{\argmax}{\operatornamewithlimits{argmax}}
+\newcommand{\bx}{{\bf x}}
+\newcommand{\bs}{{\bf s}}
+\newcommand{\bd}{{\bf d}}
+\newcommand{\by}{{\bf y}}
+\newcommand{\bw}{{\bf w}}
+\newcommand{\bh}{{\bf h}}
+\newcommand{\bb}{{\bf b}}
+\newcommand{\bE}{{\bf E}}
+\newcommand{\bH}{{\bf H}}
+\newcommand{\bP}{{\bf P}}
+\newcommand{\bC}{{\bf C}}
+\newcommand{\bS}{{\bf S}}
+
 % Code listing stuff
 \usepackage{listings}
 \usepackage[T1]{fontenc}
@@ -187,7 +202,7 @@
         \\
         \\
         \\
-        \\\huge \textbf{Dissertation Committee}\\
+        \\\huge \textbf{Committee}\\
         \\
         \\\huge Ganesh Gopalakrishnan \\
         \\\huge Aditya Bhaskara \\
@@ -236,11 +251,14 @@ mathescape=true}
 \tableofcontents
 \newpage
 
-\include{inputs/intro}
-\include{inputs/thesis}
-\include{inputs/research}
-\include{inputs/timeline}
-%\include{inputs/vision}
+\input{inputs/01-intro}
+\input{inputs/02-thesis}
+\input{inputs/03-research}
+\input{inputs/04-proposal}
+
+\renewcommand\refname{\vskip -1cm}
+\section{References}
+\bibliographystyle{abbrv}
 \printbibliography
 
 \end{document}

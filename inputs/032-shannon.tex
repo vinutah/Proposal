@@ -1,0 +1,187 @@
+\subsection{Sample Efficient Methods for Compression-Hyperparameter Search}
+\subsubsection{Background, Related Work}
+
+\paragraph{Bayesian Optimization for Hyper-Parameter Selection}
+%
+The process of determining the global sparsity ratio for DNN Model Compression can be viewed as an Hyper-parameter selection problem, in that view 
+there are several works that approach this problem using Bayesian Optimization.
+%
+\cite{snoek2012practical} presented methods for performing Bayesian optimization for hyperparameter selection of general machine learning algorithms and they introduced a fully Bayesian treatment for Expected Improvement (EI), and algorithms for dealing with variable time regimes and running experiments in parallel. 
+%
+The effectiveness of their
+approaches were demonstrated on three challenging recently published problems spanning different areas of machine learning. 
+%
+The resulting Bayesian optimization finds better hyperparameters significantly faster than the approaches \cite{cirecsan2012multi} used by the authors and surpasses a human expert at selecting hyperparameters on the competitive CIFAR-10 dataset, beating the state of the art by over $3\%$.
+
+It is intuitive to split the problem of finding optimal target sparsities into two stages: (1) find the highest target sparsity that loses at most $\epsilon$ accuracy w.r.t the original uncompressed model $\overline{\bw}$, and (2) in a constrained sparsity regime obtained from stage (1), optimize a user-provided objective function $f$ (e.g., throughput, or memory footprint) and return the solution as the final sparsity.
+For both stages, \algoName utilizes Bayesian optimization as shown in Figure~\ref{fig:condensa}.
+
+Bayesian Optimization (B.O.) is an optimization framework based on continually updating a {\em probabilistic model} with measurements of a function to be optimized~\cite{jones1998efficient}. Given a set of parameters to be optimized, B.O. makes black-box calls to the objective, updates the probabilistic model with the new information, and selects the next point to evaluate using an {\em acquisition function} that combines information about the expectation and uncertainty of a function value under the probabilistic model.
+\algoName employs a Gaussian Process (G.P.) model for B.O. due to its favorable statistical and computational characteristics~\cite{srinivas2009gaussian}. 
+It is worth highlighting that B.O. leverages principled Bayesian inference to trade off exploration and exploitation, and is sample-efficient for non-convex black-box functions such as the ones optimized by \algoName
+\cite{jones1998efficient}.
+
+\begin{comment}
+It is intuitive to split the problem of finding optimal sparsity ratios into two stages: (1) find the highest sparsity value that loses at most $\epsilon$ accuracy w.r.t the original uncompressed model, and (2) in a constrained sparsity regime obtained from stage I, optimize a user-provided objective function $f$ (e.g., throughput, or memory footprint) and return the solution as the final sparsity ratio. 
+
+It is worth noting that optimizing performance characteristics (accuracy, throughput, and so on) against sparsity ratios requires access to function $f$, and often assumes cheap function evaluation. However, for compression, each function evaluation may amount to optimizing the full model, which is computationally prohibitive.
+
+\algoName leverages black box sample-efficient Bayesian optimization to optimize objective $f$ with accuracy constraints. Bayesian optimization solves for the minimum of a black-box function $f(\bx)$ on some bounded set $\mathcal{X}$, which we take to be a subset of $\mathbb{R}^{D}$~\cite{mockus1978application,jones2001taxonomy}. These methods construct a probabilistic model of $f$ with sequential evaluation, and then exploit this model for sequential selection of information gathering actions---the choice of $x\in \mathcal{X}$. This procedure leverages all function evaluations instead of only local gradient approximations, and hence is sample efficient even for non-convex black-box functions~\cite{brochu2010tutorial}.
+
+
+A Bayesian optimization algorithm requires two design choices: a prior and an acquisition function. The prior captures assumptions about smoothness and continuity of function $f$, while the acquisition function expresses a utility function over the model posterior for sequential decisions. 
+
+% ====================
+% \subsection{Gaussian Process Optimization}% ====================
+\noindent \textbf{Gaussian Process Prior.}
+The Gaussian Process (GP) is a computationally convenient prior distribution on functions that allows for closed-form marginal and conditional computations~\cite{rasmussen2006gaussian}. The GP is defined by the property that any finite set of $N$ points $\{\bx_{n} \in \mathcal{X}\}_{n=1}^{N}$ induces a multivariate Gaussian distribution on ${\mathbb{R}}^{N}$.
+We assume that the function $f(x)$ is drawn from a GP prior and that our observations are of the form $\{\bx_n, y_n\}_{n=1}^{N}$, where $y_n \sim \mathcal{N}(f(\bx_n),\nu)$ and $\nu$ is the variance of noise introduced into the function observations.
+The support and properties of the resulting distribution on functions are determined by a mean function $m: \mathcal{X} \rightarrow \mathbb{R}$ and a positive definite covariance function $K: \mathcal{X} \times \mathcal{X} \rightarrow \mathbb{R}$.
+
+
+\noindent \textbf{Design of Acquisition Function.}
+The GP prior and sequential function evaluations induce a posterior over the function of interest $f$; the acquisition function, which we denote by $a:\mathcal{X} \rightarrow \mathbb{R}^{+}$ is the utility model that guides the next best point for function evaluation.  These acquisition functions depend on the previous observations $\{\bx_n,y_n\}$ and the GP hyperparameters $\rho$; we denote this dependence as $a(\bx; \{\bx_n, y_n\}, \rho)$. 
+%
+Under the Gaussian process prior, the acquisition function depends on the model solely through its predictive mean function $\mu(\bx; \{\bx_n,y_n\}, \rho)$ and predictive variance function $\sigma^2(\bx; \{\bx_n, y_n\}, \rho)$.
+%
+For this discussion, we denote the best current value as $\bx_{\text{next}} = \text{argmin}_{\bx_n} f(\bx_n)$ and the cumulative distribution function of the standard normal as $\Phi(\cdot)$.
+The choice of acquisition function depends on the overall problem objective, as illustrated following.  
+%
+
+\noindent \textit{1. Probability of Improvement}. This  intuitive strategy maximizes the probability of improving over the best current value \cite{kushner1964new}. Under the GP this can be computed analytically as: 
+$a_{\text{PI}}(\bx; \{\bx_n, y_n\}, \rho) = \Phi(\gamma(\bx))$, where 
+$\gamma(\bx) = \frac{f(\bx_{\text{best}}) - \mu(\bx; \{\bx_n, y_n\}, \rho)}{\sigma(\bx; \{\bx_n, y_n\}, \rho)}$.
+%
+
+\noindent \textit{2. Expected Improvement}.  Alternatively, one could choose to maximize the expected improvement (EI) over the current best.
+This also has closed form under the Gaussian process:
+$a_{\text{EI}}(\bx; \{\bx_n, y_n\}, \rho) = \sigma(x; \{\bx_n, y_n\}, \rho) - \kappa \sigma(\bx; \{\bx_n, y_n\}, \rho)$, with a tunable $\kappa$ to balance exploitation against exploration.
+%
+
+\noindent \textit{3. Upper/Lower Confidence Bound}. 
+Here, the functional approximation uncertainty is leveraged for acquisition through lower (upper) confidence bounds for functional min (max)~\cite{srinivas2009gaussian}.
+These acquisition functions have the form $a_{\text{UCB}}(\bx;\{\bx_n, y_n\};\rho) = \mu(\bx; \{\bx_n, y_{n}\}, \rho) - \kappa \sigma(\bx; \{\bx_n, y_n\}, \rho)$, with a tunable $\kappa$ to balance exploitation against exploration.
+
+\noindent \textit{4. Level-Set Optimization}. 
+    In addition to unconstrained optimization, to enable \algoName to achieve constraint satisfaction we build on top of level-set black-box optimization~\cite{bogunovic2016truncated,garg2016tumor,zanette2018robust}.
+    We leverage a Gaussian Process Adaptive Sampling criterion called Implicit Level Set Upper Confidence Bound (ILS-UCB)~\cite{garg2016tumor}, that prioritizes sampling near a level set of the estimate. 
+This algorithm prioritizes searching the expected L-C curve intersection with user accuracy constraints, conditional on estimated uncertainty, and does not seek to precisely learn the shape of the entire L-C curve.
+Intuitively, by reducing the estimation space to specifically localize the sparsity that meets user accuracy constraints, we can reduce the total number of measurements-and consequently the time required to achieve an optimal value for the sparsity.
+Hence, rather than prioritizing both high variance and high mean like UCB, ILS-UCB prioritizes sampling in areas near a level set of the mean represented by the Gaussian Process Implicit Surface, i.e. to minimize the implicit potential defined by $\mu(\bx) - L$, and where the confidence interval is large:%
+%\vspace{-3pt}
+\begin{equation}
+\bx_t = \underset{\bx \in X}{\text{argmax}}~(1 - \gamma) \sigma(\bx) - \gamma | \mu(\bx) - L|
+\label{eq:ils}
+% \vspace{-2pt}
+\end{equation}
+
+\end{comment}
+
+In \algoName's two-stage optimization pipeline, we first find a sparsity $s_{acc}$ that constrains the model accuracy function $A$ to the provided $\epsilon$. We then constrain the {\em sparsity search space} to $(0, s_{acc})$ while optimizing the user-provided objective function $f$. Note that we assume that $A$ decreases monotonically w.r.t. sparsity in the region $(0, s_{acc})$.
+For each stage, \algoName uses a distinct acquisition function
+to guide the next best point for function evaluation.
+%It depends on the previous observations $\{\bs_n,y_n\}$ and the G.P. hyperparameters $\rho$; we denote this dependence as $AcqFn(\bs; \{\bs_n, y_n\}, \rho)$. The next sparsity to sample is given by $\bs_{\text{next}} = \text{argmax}_{\bs_n} AcqFn(\bs_n)$.
+
+\paragraph{Stage 1: Solving Accuracy Constraints}
+Recall that in the first stage of the sparsity inference process, we aim to find the highest sparsity $s_{acc}$ that loses at most $\epsilon$ accuracy w.r.t. the original reference model $\overline{\bw}$. To this end, we first define a {\em Level-Set} $L$ that represents $Acc(\overline{\bw}) - \epsilon$ and aim to find the point on the accuracy curve of the compressed model that intersects with $L$; the sparsity corresponding to this solution will be $s_{acc}$. We propose a novel acquisition function to find $s_{acc}$ named Domain-Restricted Upper Confidence Bound (DR-UCB).
+
+DR-UCB builds upon an existing level-set black-box optimization technique named ILS-UCB~\cite{garg2016tumor}, %which is defined as follows: $\bs_{next} = \underset{\bs_{n}}{\text{argmax}}~(1 - \gamma) \sigma(\bs) - \gamma | \mu(\bs) - L|$, where $\gamma$ is a tunable hyper-parameter that controls exploration vs. exploitation. ILS-UCB
+which is characterized by two properties: (1) it prioritizes searching in the region where the level set intersects the accuracy curve, (2) it does not seek to precisely learn the shape of the entire accuracy curve. However, in \algoName, since accuracy values can be safely assumed to decrease monotonically with increasing sparsity, we notice that it is also possible to progressively restrict the search domain of sparsities based on whether the currently sampled point meets the level-set constraints. In DR-UCB, we exploit this property to greatly improve sample efficiency over ILS-UCB. Mathematically, we define $\bs_t$, the sparsity value sampled at iteration $t$ using DR-UCB, as follows:
+\begin{multline}
+\bs_t = \underset{\bs_{}}{\text{argmax}}~(1 - \gamma) \sigma(\bs) - \gamma | \mu(\bs) - L|
+    \text{s.t.} \quad \bs_t > \bs_{i} \quad \forall i \in [0, t-1], \quad \mathcal{B}_f(\bs_t)  \ge  L
+    \label{eq:dr-ucb}
+\end{multline}
+Here, $\mathcal{B}_f$ represents the L-C accuracy function, and $\bs_t$ is (1) greater than all the previous sparsities $\bs_i$, and (2) satisfies the level set constraint $\mathcal{B}_f(\bs_t)  \ge  L$. We achieve this by minimizing the difference between the GP's mean curve $\mu(\bs)$ and the level set using the term $|\mu(\bs) - L|$ in (\ref{eq:dr-ucb});
+the parameter $\gamma$ controls the trade-off between exploitation and exploration.
+%The intution is that for all iterations $\forall i \in [0, t-1]$, the sparsity value currently sampled sparsity $(s_t)$ is greater than all the previous solutions $s_i$ \textit{and} this sparsity value $s_t$ satisfies the level set constraint $\mathcal{B}_f(\bs_t)  \ge  L$, 
+%these two goals are obtained by minimizing the difference between the GP's mean curve $\mu(\bs)$ and the level set using the term $|\mu(s) - L|$ in (\ref{eq:dr-ucb}):
+%
+%where the $\gamma$ parameter is a trade-off parameter between the exploitation %and exploration. The domain restriction is expressed as the acceptance criteria:
+%
+Algorithm~\ref{alg:bo} illustrates how DR-UCB is employed to efficiently find $s_{acc}$.
+
+\newcommand\CONDITION[2]%
+  {\begin{tabular}[t]{@{}l@{}l@{}}
+     #1&#2
+   \end{tabular}%
+  }
+  
+  \algdef{SE}[IF]{If}{EndIf}[1]%
+  {\algorithmicif\ \CONDITION{#1}{\ \algorithmicthen}}%
+  {\algorithmicend\ \algorithmicif}%
+\algdef{C}[IF]{IF}{ElsIf}[1]%
+  {\algorithmicelse\ \algorithmicif\ \CONDITION{#1}{\ \algorithmicthen}}
+
+\makeatletter
+\algnewcommand{\LineComment}[1]{\Statex \hskip\ALG@thistlm \(\triangleright\) #1}
+\makeatother
+
+
+\begin{algorithm}[tb]
+  \caption{Bayesian Sparsity Inference with Domain Restriction}
+  \label{alg:bo}
+  \begin{minipage}{.95\columnwidth}
+    \begin{algorithmic}[1]
+     \Procedure{BO$_{DR-UCB}$}{$\mathcal{B}_f$, $L$, $T$}
+        \LineComment{$\mathcal{B}_f$: Function to optimize}
+        \LineComment{$L$: Level set}
+        \LineComment{$T$: \# Iterations}
+        \State \texttt{GP} $\leftarrow$    \texttt{GP-Regressor.initialize()}
+        \State $s_0$ $\leftarrow$ $0$; $D$ $\leftarrow$ $(0, 1)$; $\mathbf{X}$ $\leftarrow$ $\emptyset$
+        \For{$t \gets 1, 2, \ldots$ . $T-1$}
+          \State{$s_t \gets$ $\texttt{argmax}_{D}\text{DR-UCB}(s|\mathbf{X}_{0:t-1})$}
+          \State{$y_t \gets \mathcal{B}_f(s_t)$}
+          \If{$s_t > s_{t-1}$ \textbf{and} $y_t \ge$ $L$}
+              \State{$D$ $\leftarrow$ $(s_t,1)$}
+          
+        %   \State{
+        %         \If{$s_t > s_{t-1}$ \textbf{and} $y_t \ge$ AcqFn.LevelSet}
+        %         \State{AcqFn.bounds = $(s_t,1)$}
+        %         \EndIf
+        %   }
+          \EndIf
+        \State{$\mathbf{X}_{0:t} \gets \{\mathbf{X}_{0:t-1}, (s_t, y_t)\}$}
+        \State{\texttt{GP.Update}($\mathbf{X}_{0:t}$)}
+        \EndFor
+        \State{\Return $s_{T-1}$}
+      \EndProcedure
+      \algstore{Condensa}
+    \end{algorithmic}
+  \end{minipage}
+\end{algorithm}
+
+
+\paragraph{Stage 2: Optimizing the User-Defined Objective} Once we find a  sparsity $s_{acc}$ that satisfies the user-provided accuracy constraints in stage 1, our next objective is to find the final sparsity $s^*$ that optimizes the user-defined objective function $f$ in the constrained sparsity domain $(0, s_{acc})$. For this, we employ the Upper and Lower Confidence Bound (UCB/LCB) acquisition functions for function maximization and minimization, respectively~\cite{srinivas2009gaussian}.
+
+\begin{comment}
+
+\noindent \textbf{Maximizing the acquisition function.}
+\algoName uses a combination of random sampling and the L-BFGS-B
+optimization method to find the maximum of the acquisition function. We first sample a few $(1e5)$ warmup  points at random,
+and then run L-BFGS-B from $250$ random starting points.
+To find the point at which to sample, we still need to maximize the constrained objective $u(\bx)$.
+\textit{Unlike the original objective function, $u(\cdot)$ can be cheaply sampled}.
+Existing works optimize the acquisition function using DIRECT \cite{jones1993lipschitzian}, a deterministic, derivative-free optimizer.
+It uses the existing samples of the objective function to decide how to proceed to divide the feasible space into finer rectangles.
+Other methods such as Monte Carlo and multi-start have also been used, and seem to perform reasonably well \cite{mockus1994application,lizotte2008practical}. Note that the second term in Equation~\ref{eq:ils} is negative, as we are trying to sample in locations where the distance to the level set is minimized.
+To find the point at which to sample, we still need to maximize the constrained objective $u(\bx)$.
+Unlike the original objective function $f$, $u(\cdot)$ can be cheaply sampled. In \algoName we use GP-UCB (GP-LCB) for function maximization (minimization) and ILS-UCB for solving constraints, as shown in Algorithm~\ref{alg:bo}.
+%
+
+\noindent \textbf{Algorithm Summary.}
+We describe \algoName's two-stage optimization pipeline in Algorithm~\ref{alg:bo}. Here, we first find a sparsity value $s_{acc}$ that constrains the accuracy function $A$ to the provided $\epsilon$. We then constrain the search space to $(0, s_{acc})$ while optimizing the user-provided objective function $f$. The \texttt{BAYESOPT} function runs a Bayesian optimization loop given a target objective function $\mathcal{B}_f$ and an acquisition function. Note that we assume that $A$ decreases monotonically w.r.t. sparsity in the region $(0, s_{acc})$.
+
+\end{comment}
+
+\subsubsection{Contribution}
+
+\begin{enumerate}
+\item It presents a novel sample-efficient algorithm based on Bayesian optimization (B.O.) in \algoName for automatically inferring optimal sparsities based on a user-provided objective function. Given \algoName's ability to support the expression of meaningful high-level
+objective functions---for example, the throughput (images/sec) of a convolutional neural network---users
+are freed from the burden of having to specify compression hyperparameters manually.
+
+\item We introduce the first framework that supports model compression based on user-defined constraints on target model accuracy, size and FLOP metrics instead of raw sparsity ratios.
+
+\item It demonstrates the effectiveness of \algoName on three image classification and language modeling tasks, resulting in memory footprint reductions of up to $188\times$ and runtime throughput improvements of up to $2.59\times$ using at most 10 samples per search.
+\end{enumerate}
